@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal Video Player</title>
+    
+    <!-- Video.js CSS -->
+    <link href="https://vjs.zencdn.net/8.12.0/video-js.css" rel="stylesheet">
+    
+    <!-- HLS.js for HLS support -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <!-- Video.js JavaScript -->
+    <script src="https://vjs.zencdn.net/8.12.0/video.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #B0BEC5;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: #607D8B;
+            border-radius: 20px;
+            padding: 60px 40px;
+            width: 100%;
+            max-width: 800px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+
+        .title {
+            color: White;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            letter-spacing: -2px;
+        }
+
+        .subtitle {
+            color: black;
+            font-size: 1.3rem;
+            font-weight: 400;
+            margin-bottom: 50px;
+            line-height: 1.5;
+        }
+
+        .input-container {
+            margin-bottom: 30px;
+        }
+
+        .url-input {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px 25px;
+            border: 3px solid #e1e8ed;
+            border-radius: 25px;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            background: #ffffff;
+            margin-bottom: 25px;
+        }
+
+        .url-input:focus {
+            outline: none;
+            border-color: #667eea;
+            transform: translateY(-3px);
+        }
+
+        .play-button {
+            padding: 20px 50px;
+            background: #37474F;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 20px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .play-button:hover {
+            transform: translateY(-3px);
+            filter: brightness(1.1);
+        }
+
+        .play-button:active {
+            transform: translateY(0);
+        }
+
+        .play-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .message {
+            padding: 15px 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-weight: 500;
+            display: none;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            color: #667eea;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #667eea;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+            margin-left: 15px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .player-container {
+            margin-top: 40px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #000;
+            display: none;
+        }
+
+        .video-js {
+            width: 100%;
+            height: 450px;
+        }
+
+        .video-js .vjs-big-play-button {
+            border-radius: 50%;
+            background: rgba(102, 126, 234, 0.9);
+            border: none;
+            width: 90px;
+            height: 90px;
+            line-height: 90px;
+            font-size: 28px;
+            transition: all 0.3s ease;
+        }
+
+        .video-js .vjs-big-play-button:hover {
+            background: rgba(102, 126, 234, 1);
+            transform: scale(1.1);
+        }
+
+        iframe {
+            width: 100%;
+            height: 450px;
+            border: none;
+            border-radius: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 40px 20px;
+                margin: 10px;
+            }
+
+            .title {
+                font-size: 2.5rem;
+            }
+
+            .subtitle {
+                font-size: 1.1rem;
+                margin-bottom: 40px;
+            }
+
+            .url-input {
+                padding: 18px 20px;
+                font-size: 16px;
+            }
+
+            .play-button {
+                padding: 18px 40px;
+                font-size: 18px;
+            }
+
+            .video-js, iframe {
+                height: 280px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2rem;
+            }
+
+            .subtitle {
+                font-size: 1rem;
+            }
+
+            .url-input {
+                padding: 15px 18px;
+                font-size: 15px;
+            }
+
+            .play-button {
+                padding: 15px 30px;
+                font-size: 16px;
+            }
+
+            .video-js, iframe {
+                height: 220px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Universal Video Player</h1>
+        <p class="subtitle">Play videos from any platform or direct URL with advanced streaming support</p>
+        
+        <div class="input-container">
+            <input type="text" class="url-input" id="videoUrl" placeholder="Enter video URL (YouTube, Vimeo, Dailymotion, direct video files, HLS, DASH...)">
+            <br>
+            <button class="play-button" id="playButton" onclick="loadVideo()">Stream Your Video</button>
+        </div>
+
+        <div class="loading" id="loading">Loading video...</div>
+        <div class="message success-message" id="successMessage"></div>
+        <div class="message error-message" id="errorMessage"></div>
+
+        <div class="player-container" id="playerContainer">
+            <video-js id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
+                <p class="vjs-no-js">
+                    To view this video please enable JavaScript, and consider upgrading to a web browser that
+                    <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>.
+                </p>
+            </video-js>
+        </div>
+    </div>
+
+    <script>
+        let player = null;
+        let currentPlayerType = null;
+
+        function showMessage(message, isError = false) {
+            const errorEl = document.getElementById('errorMessage');
+            const successEl = document.getElementById('successMessage');
+            
+            if (isError) {
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+                successEl.style.display = 'none';
+            } else {
+                successEl.textContent = message;
+                successEl.style.display = 'block';
+                errorEl.style.display = 'none';
+            }
+            
+            setTimeout(() => {
+                errorEl.style.display = 'none';
+                successEl.style.display = 'none';
+            }, 5000);
+        }
+
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            document.getElementById('playButton').disabled = show;
+        }
+
+        function getVideoId(url, platform) {
+            let videoId = null;
+            
+            switch (platform) {
+                case 'youtube':
+                    const youtubeRegex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+                    const youtubeMatch = url.match(youtubeRegex);
+                    videoId = youtubeMatch ? youtubeMatch[1] : null;
+                    break;
+                    
+                case 'vimeo':
+                    const vimeoRegex = /(?:vimeo\.com\/)(?:.*\/)?(\d+)/;
+                    const vimeoMatch = url.match(vimeoRegex);
+                    videoId = vimeoMatch ? vimeoMatch[1] : null;
+                    break;
+                    
+                case 'dailymotion':
+                    const dailymotionRegex = /(?:dailymotion\.com\/video\/|dai\.ly\/)([a-zA-Z0-9]+)/;
+                    const dailymotionMatch = url.match(dailymotionRegex);
+                    videoId = dailymotionMatch ? dailymotionMatch[1] : null;
+                    break;
+            }
+            
+            return videoId;
+        }
+
+        function detectVideoType(url) {
+            if (!url) return null;
+            
+            // YouTube detection
+            if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                return 'youtube';
+            }
+            
+            // Vimeo detection
+            if (url.includes('vimeo.com')) {
+                return 'vimeo';
+            }
+            
+            // Dailymotion detection
+            if (url.includes('dailymotion.com') || url.includes('dai.ly')) {
+                return 'dailymotion';
+            }
+            
+            // HLS detection
+            if (url.includes('.m3u8')) {
+                return 'hls';
+            }
+            
+            // DASH detection
+            if (url.includes('.mpd')) {
+                return 'dash';
+            }
+            
+            // Direct video file detection
+            const videoExtensions = ['.mp4', '.webm', '.ogv', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
+            if (videoExtensions.some(ext => url.toLowerCase().includes(ext))) {
+                return 'direct';
+            }
+            
+            // Default to direct if it looks like a video URL
+            return 'direct';
+        }
+
+        function destroyCurrentPlayer() {
+            if (player) {
+                try {
+                    player.dispose();
+                } catch (e) {
+                    console.log('Error disposing player:', e);
+                }
+                player = null;
+            }
+            currentPlayerType = null;
+        }
+
+        function createVideoJsPlayer(options = {}) {
+            const defaultOptions = {
+                controls: true,
+                responsive: true,
+                fluid: true,
+                playbackRates: [0.5, 1, 1.25, 1.5, 2],
+                plugins: {}
+            };
+            
+            const finalOptions = Object.assign(defaultOptions, options);
+            return videojs('videoPlayer', finalOptions);
+        }
+
+        function loadVideo() {
+            const url = document.getElementById('videoUrl').value.trim();
+            
+            if (!url) {
+                showMessage('Please enter a video URL', true);
+                return;
+            }
+            
+            showLoading(true);
+            destroyCurrentPlayer();
+            
+            const videoType = detectVideoType(url);
+            console.log('Detected video type:', videoType, 'for URL:', url);
+            
+            document.getElementById('playerContainer').style.display = 'block';
+            
+            try {
+                switch (videoType) {
+                    case 'youtube':
+                        loadYouTubeVideo(url);
+                        break;
+                        
+                    case 'vimeo':
+                        loadVimeoVideo(url);
+                        break;
+                        
+                    case 'dailymotion':
+                        loadDailymotionVideo(url);
+                        break;
+                        
+                    case 'hls':
+                        loadHLSVideo(url);
+                        break;
+                        
+                    case 'dash':
+                        loadDASHVideo(url);
+                        break;
+                        
+                    case 'direct':
+                    default:
+                        loadDirectVideo(url);
+                        break;
+                }
+            } catch (error) {
+                console.error('Error loading video:', error);
+                showMessage('Error loading video: ' + error.message, true);
+                showLoading(false);
+            }
+        }
+
+        function loadYouTubeVideo(url) {
+            const videoId = getVideoId(url, 'youtube');
+            if (!videoId) {
+                showMessage('Invalid YouTube URL', true);
+                showLoading(false);
+                return;
+            }
+            
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <iframe 
+                    src="https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&rel=0" 
+                    allowfullscreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
+                </iframe>
+            `;
+            
+            showMessage('YouTube video loaded successfully');
+            showLoading(false);
+            currentPlayerType = 'youtube';
+        }
+
+        function loadVimeoVideo(url) {
+            const videoId = getVideoId(url, 'vimeo');
+            if (!videoId) {
+                showMessage('Invalid Vimeo URL', true);
+                showLoading(false);
+                return;
+            }
+            
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <iframe 
+                    src="https://player.vimeo.com/video/${videoId}?autoplay=0&title=1&byline=1&portrait=1" 
+                    allowfullscreen>
+                </iframe>
+            `;
+            
+            showMessage('Vimeo video loaded successfully');
+            showLoading(false);
+            currentPlayerType = 'vimeo';
+        }
+
+        function loadDailymotionVideo(url) {
+            const videoId = getVideoId(url, 'dailymotion');
+            if (!videoId) {
+                showMessage('Invalid Dailymotion URL', true);
+                showLoading(false);
+                return;
+            }
+            
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <iframe 
+                    src="https://www.dailymotion.com/embed/video/${videoId}" 
+                    allowfullscreen>
+                </iframe>
+            `;
+            
+            showMessage('Dailymotion video loaded successfully');
+            showLoading(false);
+            currentPlayerType = 'dailymotion';
+        }
+
+        function loadHLSVideo(url) {
+            // Reset player container to video element
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <video-js id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a web browser that
+                        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>.
+                    </p>
+                </video-js>
+            `;
+            
+            if (Hls.isSupported()) {
+                player = createVideoJsPlayer();
+                
+                const hls = new Hls();
+                hls.loadSource(url);
+                hls.attachMedia(player.tech().el());
+                
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    console.log('HLS manifest parsed');
+                    showMessage('HLS Stream loaded successfully');
+                    showLoading(false);
+                });
+                
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    console.error('HLS error:', data);
+                    showMessage('HLS streaming error: ' + data.details, true);
+                    showLoading(false);
+                });
+                
+            } else {
+                // Try native HLS support (Safari)
+                player = createVideoJsPlayer({
+                    sources: [{
+                        src: url,
+                        type: 'application/vnd.apple.mpegurl'
+                    }]
+                });
+                
+                setupPlayerEvents('HLS Stream (Native)');
+            }
+            
+            currentPlayerType = 'hls';
+        }
+
+        function loadDASHVideo(url) {
+            // Reset player container to video element
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <video-js id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a web browser that
+                        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>.
+                    </p>
+                </video-js>
+            `;
+            
+            player = createVideoJsPlayer({
+                sources: [{
+                    src: url,
+                    type: 'application/dash+xml'
+                }]
+            });
+            
+            setupPlayerEvents('DASH Stream');
+            currentPlayerType = 'dash';
+        }
+
+        function loadDirectVideo(url) {
+            // Reset player container to video element
+            const playerContainer = document.getElementById('playerContainer');
+            playerContainer.innerHTML = `
+                <video-js id="videoPlayer" class="video-js vjs-default-skin" controls preload="auto" data-setup="{}">
+                    <p class="vjs-no-js">
+                        To view this video please enable JavaScript, and consider upgrading to a web browser that
+                        <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>.
+                    </p>
+                </video-js>
+            `;
+            
+            // Try to determine the MIME type from the URL
+            let mimeType = 'video/mp4'; // default
+            
+            if (url.toLowerCase().includes('.webm')) {
+                mimeType = 'video/webm';
+            } else if (url.toLowerCase().includes('.ogv')) {
+                mimeType = 'video/ogg';
+            } else if (url.toLowerCase().includes('.avi')) {
+                mimeType = 'video/avi';
+            } else if (url.toLowerCase().includes('.mov')) {
+                mimeType = 'video/quicktime';
+            }
+            
+            player = createVideoJsPlayer({
+                sources: [{
+                    src: url,
+                    type: mimeType
+                }]
+            });
+            
+            setupPlayerEvents('Direct Video');
+            currentPlayerType = 'direct';
+        }
+
+        function setupPlayerE
