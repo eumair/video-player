@@ -609,4 +609,39 @@
             currentPlayerType = 'direct';
         }
 
-        function setupPlayerE
+        function setupPlayerEvents(playerType) {
+            if (!player) return;
+            
+            player.ready(function() {
+                console.log(`${playerType} player ready`);
+                showMessage(`${playerType} loaded successfully`);
+                showLoading(false);
+            });
+            
+            player.on('error', function(e) {
+                console.error(`${playerType} player error:`, e);
+                showMessage(`Error playing ${playerType}: ${player.error().message}`, true);
+                showLoading(false);
+            });
+            
+            player.on('loadstart', function() {
+                console.log(`${playerType} load started`);
+            });
+            
+            player.on('canplay', function() {
+                console.log(`${playerType} can play`);
+            });
+        }
+document.getElementById('videoUrl').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                loadVideo();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Universal Video Player initialized');
+        });
+    </script>
+</body>
+</html>
